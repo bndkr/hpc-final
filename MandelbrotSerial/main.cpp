@@ -74,6 +74,44 @@ int main(int, char**)
         }
     }
 
+    // perform a blur image convolution kernel
+
+    // define a 3x3 kernel
+    // blur kernel
+    // unsigned char kernel[3][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
+
+    // sharpen kernel
+    unsigned char kernel[3][3] = { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } };
+
+    // for each pixel
+    for (i = 0; i < HEIGHT; i++)
+    {
+        for (j = 0; j < WIDTH; j++)
+        {
+            // for each pixel, average the 3x3 grid around it
+            int sum_r = 0;
+            int sum_g = 0;
+            int sum_b = 0;
+            int count = 0;
+            for (int k = -1; k <= 1; k++)
+            {
+                for (int l = -1; l <= 1; l++)
+                {
+                    if (i + k >= 0 && i + k < HEIGHT && j + l >= 0 && j + l < WIDTH)
+                    {
+                        sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                        sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                        sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                        count += kernel[l + 1][k + 1];
+                    }
+                }
+            }
+            pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
+            pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
+            pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
+        }
+    }
+
     generateBitmapImage(pImage, HEIGHT, WIDTH, imageFileName);
     printf("Image generated!!");
     return 0;
