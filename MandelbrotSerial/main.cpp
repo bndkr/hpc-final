@@ -42,11 +42,13 @@ namespace
     }
 } // namespace
 
-#define HEIGHT 200
-#define WIDTH 200
+#define HEIGHT 800
+#define WIDTH 800
 
-#define BLACK 0
-#define WHITE 255
+// #define CONVOLVE
+
+#define BLACK 80
+#define WHITE 200
 
 int main(int, char**)
 {
@@ -81,7 +83,7 @@ int main(int, char**)
     // unsigned char kernel[3][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
 
     // sharpen kernel
-    unsigned char kernel[3][3] = { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } };
+    unsigned char kernel[3][3] = { { 0, 1, 0 }, { 1, -4, 1 }, { 0, 1, 0 } };
 
     // for each pixel
     for (i = 0; i < HEIGHT; i++)
@@ -106,9 +108,11 @@ int main(int, char**)
                     }
                 }
             }
+#ifdef CONVOLVE
             pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
             pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
             pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
+#endif
         }
     }
 
