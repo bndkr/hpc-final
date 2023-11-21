@@ -53,7 +53,7 @@ namespace
 int main(int, char**)
 {
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
-    unsigned char* wImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
+    unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     char* imageFileName = (char*)"bitmapImage.bmp";
 
     int i, j;
@@ -110,14 +110,14 @@ int main(int, char**)
                 }
             }
 #ifdef CONVOLVE
-            wImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
-            wImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
-            wImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
 #endif
         }
     }
 
-    generateBitmapImage(wImage, HEIGHT, WIDTH, imageFileName);
+    generateBitmapImage(rImage, HEIGHT, WIDTH, imageFileName);
     printf("Image generated!!");
     return 0;
 }
