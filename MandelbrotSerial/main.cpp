@@ -4,6 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define HEIGHT 800
+#define WIDTH 800
+
+// #define CONVOLVE
+
+#define BLACK 80
+#define WHITE 200
+
 namespace
 {
     double calculatePixel(const double x_0, const double y_0, const unsigned maxIterations)
@@ -41,14 +49,6 @@ namespace
         return iteration;
     }
 } // namespace
-
-#define HEIGHT 800
-#define WIDTH 800
-
-// #define CONVOLVE
-
-#define BLACK 80
-#define WHITE 200
 
 int main(int, char**)
 {
