@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 3.12)
 project(hpc-final-project)
 set(mandelbrot-serial MandelbrotSerial)
+set(mandelbrot-threaded MandelbrotThreaded)
 add_executable(MandelbrotSerial
   ${mandelbrot-serial}/main.cpp
   ${mandelbrot-serial}/bmp.c
   ${mandelbrot-serial}/bmp.h
+)
+add_executable(MandelbrotThreaded
+	${mandelbrot-threaded}/main.cpp
+	${mandelbrot-threaded}/bmp.c
+	${mandelbrot-threaded}/bmp.h
 )
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   target_compile_options(MandelbrotSerial PRIVATE /W4 /permissive-)
