@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(hpc-final-project)
 set(mandelbrot-serial MandelbrotSerial)
 set(mandelbrot-threaded MandelbrotThreaded)
+set(mandelbrot-cuda MandelbrotGPU)
 add_executable(MandelbrotSerial
   ${mandelbrot-serial}/main.cpp
   ${mandelbrot-serial}/bmp.c
@@ -12,6 +13,13 @@ add_executable(MandelbrotThreaded
 	${mandelbrot-threaded}/bmp.c
 	${mandelbrot-threaded}/bmp.h
 )
+find_package(CUDA REQUIRED)
+cuda_add_executable(MandelbrotCuda
+  ${mandelbrot-cuda}/main.cu
+  ${mandelbrot-cuda}/bmp.c
+  ${mandelbrot-cuda}/bmp.h
+)
+target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   target_compile_options(MandelbrotSerial PRIVATE /W4 /permissive-)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
