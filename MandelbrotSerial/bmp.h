@@ -10,7 +10,7 @@ extern "C"
 {
 #endif
 
-    void generateBitmapImage(unsigned char* image, int height, int width, char* imageFileName);
+    void generateBitmapImage(unsigned char* image, int height, int width, const char* imageFileName);
     unsigned char* createBitmapFileHeader(int height, int stride);
     unsigned char* createBitmapInfoHeader(int height, int width);
 

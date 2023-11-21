@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define HEIGHT 800
-#define WIDTH 800
+#define HEIGHT 1200
+#define WIDTH 1200
 
-// #define CONVOLVE
+#define CONVOLVE
 
-#define BLACK 80
-#define WHITE 200
+#define BLACK 50
+#define WHITE 230
 
 namespace
 {
@@ -53,8 +53,6 @@ namespace
 int main(int, char**)
 {
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
-    char* imageFileName = (char*)"bitmapImage.bmp";
-
     int i, j;
     for (i = 0; i < HEIGHT; i++)
     {
@@ -76,21 +74,20 @@ int main(int, char**)
         }
     }
 
-    // perform a blur image convolution kernel
-
-    // define a 3x3 kernel
     // blur kernel
     // unsigned char kernel[3][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
-
     // sharpen kernel
-    unsigned char kernel[3][3] = { { 0, 1, 0 }, { 1, -4, 1 }, { 0, 1, 0 } };
+    // char kernel[3][3] = { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } };
+    // edge detection kernel
+    char kernel[3][3] = { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } };
+
+    unsigned char* pImageCopy = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
 
     // for each pixel
     for (i = 0; i < HEIGHT; i++)
     {
         for (j = 0; j < WIDTH; j++)
         {
-            // for each pixel, average the 3x3 grid around it
             int sum_r = 0;
             int sum_g = 0;
             int sum_b = 0;
@@ -104,19 +101,18 @@ int main(int, char**)
                         sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
                         sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
                         sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
-                        count += kernel[l + 1][k + 1];
+                        count += 1;
                     }
                 }
             }
 #ifdef CONVOLVE
-            pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
-            pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
-            pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
+            pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = (unsigned char) sum_r;
+            pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char) sum_g;
+            pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char) sum_b;
 #endif
         }
     }
-
-    generateBitmapImage(pImage, HEIGHT, WIDTH, imageFileName);
+    generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "mandelbrot.bmp");
     printf("Image generated!!");
     return 0;
 }
