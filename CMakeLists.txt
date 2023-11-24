@@ -1,47 +1,36 @@
 cmake_minimum_required(VERSION 3.12)
 project(hpc-final-project)
-set(mandelbrot-serial MandelbrotSerial)
-set(mandelbrot-threaded MandelbrotThreaded)
-set(mandelbrot-cuda MandelbrotGPU)
-set(mandelbrot-dist MandelbrotDistributed)
+set(bmp_srcs bmp/bmp.c bmp/bmp.h)
+##############################################
 add_executable(MandelbrotSerial
-  ${mandelbrot-serial}/main.cpp
-  ${mandelbrot-serial}/bmp.c
-  ${mandelbrot-serial}/bmp.h
+  MandelbrotSerial/main.cpp
+  ${bmp_srcs}
 )
+target_include_directories(MandelbrotSerial PRIVATE bmp/)
+##############################################
 add_executable(MandelbrotThreaded
-	${mandelbrot-threaded}/main.cpp
-	${mandelbrot-threaded}/bmp.c
-	${mandelbrot-threaded}/bmp.h
-)
+	MandelbrotThreaded/main.cpp
+  ${bmp_srcs}
+  )
+target_include_directories(MandelbrotThreaded PRIVATE bmp/)
+##############################################
 add_executable(MandelbrotDistributed
-  ${mandelbrot-dist}/main.cpp
-  ${mandelbrot-dist}/bmp.c
-  ${mandelbrot-dist}/bmp.h
+  MandelbrotDistributed/main.cpp
+  ${bmp_srcs}
 )
-find_package(CUDA REQUIRED)
-cuda_add_executable(MandelbrotCuda
-  ${mandelbrot-cuda}/main.cu
-  ${mandelbrot-cuda}/bmp.c
-  ${mandelbrot-cuda}/bmp.h
+target_include_directories(MandelbrotDistributed PRIVATE bmp/ "C:/Program Files (x86)/Microsoft SDKs/MPI/Include")
+target_link_libraries(MandelbrotDistributed PRIVATE
+"C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64/msmpi.lib"
+"C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64/msmpifec.lib"
+"C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64/msmpifmc.lib"
 )
-target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  target_compile_options(MandelbrotSerial PRIVATE /W4 /permissive-)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  target_compile_options(MandelbrotSerial PRIVATE -Wall -Wextra -pedantic)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  target_compile_options(MandelbrotSerial PRIVATE -Wall -Wextra -pedantic)
-endif()
-# add_executable(MandelbrotSerialTest
-#   ${mandelbrot-serial}/test.cpp
+target_link_libraries(MandelbrotDistributed ${MPI_C_LIBRARIES})
+##############################################
+# find_package(CUDA REQUIRED)
+# cuda_add_executable(MandelbrotCuda
+#   ${mandelbrot-cuda}/main.cu
+#   ${bmp_srcs}
 # )
-# include(FetchContent)
-# FetchContent_Declare(
-# googletest
-# GIT_REPOSITORY https://github.com/google/googletest.git
-# GIT_TAG v1.14.0
-# )
-# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-# FetchContent_MakeAvailable(googleTest)
-# target_link_libraries(MandelbrotSerialTest gtest_main)
+# target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})
+# target_include_directories(MandelbrotCuda PRIVATE bmp/)
+##############################################
