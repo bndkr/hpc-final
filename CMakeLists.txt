@@ -3,6 +3,7 @@ project(hpc-final-project)
 set(mandelbrot-serial MandelbrotSerial)
 set(mandelbrot-threaded MandelbrotThreaded)
 set(mandelbrot-cuda MandelbrotGPU)
+set(mandelbrot-dist MandelbrotDistributed)
 add_executable(MandelbrotSerial
   ${mandelbrot-serial}/main.cpp
   ${mandelbrot-serial}/bmp.c
@@ -12,6 +13,11 @@ add_executable(MandelbrotThreaded
 	${mandelbrot-threaded}/main.cpp
 	${mandelbrot-threaded}/bmp.c
 	${mandelbrot-threaded}/bmp.h
+)
+add_executable(MandelbrotDistributed
+  ${mandelbrot-dist}/main.cpp
+  ${mandelbrot-dist}/bmp.c
+  ${mandelbrot-dist}/bmp.h
 )
 find_package(CUDA REQUIRED)
 cuda_add_executable(MandelbrotCuda
