@@ -3,6 +3,7 @@ project(hpc-final-project)
 set(bmp_srcs bmp/bmp.c bmp/bmp.h)
 set(compute_srcs computePixel.h computePixel.c)
 set(compute_cuda_srcs computePixel.cuh)
+set(defs defs.h)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 ##############################################
 add_executable(MandelbrotSerial

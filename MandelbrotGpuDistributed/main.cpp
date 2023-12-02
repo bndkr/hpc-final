@@ -1,17 +1,12 @@
 #include "bmp.h"
 #include "computePixel.h"
+#include "defs.h"
 
 #include <cstring>
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define HEIGHT 1200
-#define WIDTH 1200
-
-#define BLACK 50
-#define WHITE 230
 
 namespace
 {
@@ -108,7 +103,7 @@ int main(int argc, char** argv)
     if (rank == 0)
     {
         // start at one so we get a row of blank pixels for convolution
-        for (int i = 1; i < rows_per_process + 1; i++)
+        for (int i = 1; i < rows_per_process + 2; i++)
         {
             for (int j = 0; j < WIDTH; j++)
             {

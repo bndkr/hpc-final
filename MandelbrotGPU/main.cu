@@ -1,17 +1,10 @@
 #include "bmp.h"
 #include "computePixel.cuh"
+#include "defs.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define HEIGHT 1200
-#define WIDTH 1200
-
-#define CONVOLVE
-
-#define BLACK 50
-#define WHITE 230
 
 namespace
 {

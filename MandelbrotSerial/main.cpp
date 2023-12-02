@@ -1,17 +1,10 @@
 #include "bmp.h"
 #include "computePixel.h"
+#include "defs.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define HEIGHT 2000
-#define WIDTH 2000
-
-#define CONVOLVE
-
-#define BLACK 50
-#define WHITE 230
 
 int main(int, char**)
 {

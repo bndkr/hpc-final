@@ -1,19 +1,12 @@
 #include "bmp.h"
 #include "computePixel.h"
+#include "defs.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <thread>
 #include <vector>
-
-#define HEIGHT 1083
-#define WIDTH 1083
-
-#define CONVOLVE
-
-#define BLACK 0
-#define WHITE 255
 
 void convolveImage(unsigned char* pImage, unsigned char* rImage, unsigned char kernel[3][3], size_t my_start_y, size_t my_start_x, size_t my_end_y, size_t my_end_x)
 {
