@@ -1,4 +1,5 @@
 #include "bmp.h"
+#include "computePixel.h"
 
 #include <cstring>
 #include <math.h>
