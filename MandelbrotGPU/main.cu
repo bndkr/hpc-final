@@ -74,7 +74,7 @@ int main(int, char**)
 
     unsigned char* pOutputImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     cudaMemcpy(pOutputImage, hImageOut, HEIGHT * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
-    generateBitmapImage(pOutputImage, HEIGHT, WIDTH, "mandelbrot.bmp");
+    generateBitmapImage(pOutputImage, HEIGHT, WIDTH, "gpu.bmp");
     printf("Image generated!!");
     free(pOutputImage);
     cudaFree(hImageIn);

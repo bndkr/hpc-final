@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     unsigned char* pConvoFragment = (unsigned char*)calloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL, 1);
     unsigned char* pConvoFragmentResult = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
 
-    // use MPI to send the data to each process
+    // send the data to each process
     if (rank == 0)
     {
         // start at one so we get a row of blank pixels for convolution
@@ -124,8 +124,7 @@ int main(int argc, char** argv)
     MPI_Gather(pConvoFragmentResult, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pFinalImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
-        generateBitmapImage(pMandelbrotImage, HEIGHT, WIDTH, "mandelbrot.bmp");
-        generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "convolved.bmp");
+        generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "distributed.bmp");
         printf("rank %d: done generating images\n", rank);
         fflush(stdout);
         free(pMandelbrotImage);

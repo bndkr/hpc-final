@@ -61,7 +61,7 @@ int main(int, char**)
 #endif
         }
     }
-    generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "mandelbrot.bmp");
+    generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "serial.bmp");
     printf("Image generated!!");
     return 0;
 }

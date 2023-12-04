@@ -51,7 +51,7 @@ int main(int, char**)
 {
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
-    char* imageFileName = (char*)"bitmapImage.bmp";
+    char* imageFileName = (char*)"threaded.bmp";
     float numOfThreads = 5;
     int xtiles = (int)ceil((float)WIDTH / numOfThreads);
     int ytiles = (int)ceil((float)HEIGHT / numOfThreads);
