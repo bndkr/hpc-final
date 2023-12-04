@@ -1,54 +1,12 @@
 #include "bmp.h"
+#include "computePixel.h"
+#include "defs.h"
 
 #include <cstring>
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define HEIGHT 1200
-#define WIDTH 1200
-
-#define BLACK 50
-#define WHITE 230
-
-namespace
-{
-    double calculatePixel(const double x_0, const double y_0, const unsigned maxIterations)
-    {
-        // cardioid check
-        double p = sqrt((x_0 - 0.25) * (x_0 - 0.25) + y_0 * y_0);
-        if (x_0 <= p - (2 * p * p) + 0.25)
-            return -1;
-
-        // period 2 bulb check
-        if ((x_0 + 1) * (x_0 + 1) + y_0 * y_0 <= 1.0 / 16)
-            return -1;
-
-        double z_x = 0;
-        double z_y = 0;
-
-        double x_2 = 0;
-        double y_2 = 0;
-
-        unsigned int iteration = 0;
-
-        while (x_2 + y_2 < 4 && iteration < maxIterations)
-        {
-            // iterate: z = z^2 + c
-            z_y = 2 * z_x * z_y + y_0;
-            z_x = x_2 - y_2 + x_0;
-            x_2 = z_x * z_x;
-            y_2 = z_y * z_y;
-            iteration++;
-        }
-        if (iteration == maxIterations)
-        {
-            return -1; // inside the mandelbrot set
-        }
-        return iteration;
-    }
-} // namespace
 
 int main(int argc, char** argv)
 {
@@ -100,14 +58,14 @@ int main(int argc, char** argv)
     MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
     // +2 for the extra top and bottom rows needed for convolution
-    unsigned char* pConvoFragment = (unsigned char*)malloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL);
+    unsigned char* pConvoFragment = (unsigned char*)calloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL, 1);
     unsigned char* pConvoFragmentResult = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
 
     // use MPI to send the data to each process
     if (rank == 0)
     {
         // start at one so we get a row of blank pixels for convolution
-        for (int i = 1; i < rows_per_process + 1; i++)
+        for (int i = 1; i < rows_per_process + 2; i++)
         {
             for (int j = 0; j < WIDTH; j++)
             {
@@ -175,7 +133,6 @@ int main(int argc, char** argv)
     }
     free(pConvoFragment);
     free(pConvoFragmentResult);
-    printf("exiting rank %d\n", rank);
     fflush(stdout);
     MPI_Finalize();
     return 0;

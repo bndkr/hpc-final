@@ -1,22 +1,29 @@
 cmake_minimum_required(VERSION 3.12)
 project(hpc-final-project)
 set(bmp_srcs bmp/bmp.c bmp/bmp.h)
+set(compute_srcs computePixel.h computePixel.c)
+set(compute_cuda_srcs computePixel.cuh)
+set(defs defs.h)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 ##############################################
 add_executable(MandelbrotSerial
   MandelbrotSerial/main.cpp
   ${bmp_srcs}
+  ${compute_srcs}
 )
 target_include_directories(MandelbrotSerial PRIVATE bmp/)
 ##############################################
 add_executable(MandelbrotThreaded
 	MandelbrotThreaded/main.cpp
   ${bmp_srcs}
+  ${compute_srcs}
   )
 target_include_directories(MandelbrotThreaded PRIVATE bmp/)
 ##############################################
 add_executable(MandelbrotDistributed
   MandelbrotDistributed/main.cpp
   ${bmp_srcs}
+  ${compute_srcs}
 )
 target_include_directories(MandelbrotDistributed PRIVATE bmp/ "C:/Program Files (x86)/Microsoft SDKs/MPI/Include")
 target_link_libraries(MandelbrotDistributed PRIVATE

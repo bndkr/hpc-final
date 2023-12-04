@@ -1,4 +1,6 @@
 #include "../bmp/bmp.h"
+#include "computePixel.h"
+#include "defs.h"
 #include "../bmp/bmp.c"
 
 #include <cstring>
@@ -72,7 +74,7 @@ int main(int argc, char** argv)
     if (rank == 0)
     {
         // start at one so we get a row of blank pixels for convolution
-        for (int i = 1; i < rows_per_process + 1; i++)
+        for (int i = 1; i < rows_per_process + 2; i++)
         {
             for (int j = 0; j < WIDTH; j++)
             {
