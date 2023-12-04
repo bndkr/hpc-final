@@ -13,31 +13,31 @@ add_executable(MandelbrotSerial
 )
 target_include_directories(MandelbrotSerial PRIVATE bmp/)
 ##############################################
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 add_executable(MandelbrotThreaded
-	MandelbrotThreaded/main.cpp
-  ${bmp_srcs}
-  ${compute_srcs}
-  )
+MandelbrotThreaded/main.cpp
+${bmp_srcs}
+${compute_srcs}
+)
+target_link_libraries(MandelbrotThreaded Threads::Threads)
 target_include_directories(MandelbrotThreaded PRIVATE bmp/)
 ##############################################
+find_package(MPI REQUIRED)
 add_executable(MandelbrotDistributed
   MandelbrotDistributed/main.cpp
   ${bmp_srcs}
   ${compute_srcs}
 )
-target_include_directories(MandelbrotDistributed PRIVATE bmp/ "C:/Program Files (x86)/Microsoft SDKs/MPI/Include")
-target_link_libraries(MandelbrotDistributed PRIVATE
-"C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64/msmpi.lib"
-"C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64/msmpifec.lib"
-"C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64/msmpifmc.lib"
-)
-target_link_libraries(MandelbrotDistributed ${MPI_C_LIBRARIES})
+target_include_directories(MandelbrotDistributed PRIVATE bmp/)
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+target_link_libraries(MandelbrotDistributed ${MPI_CXX_LIBRARIES})
 ##############################################
-# find_package(CUDA REQUIRED)
-# cuda_add_executable(MandelbrotCuda
-#   ${mandelbrot-cuda}/main.cu
-#   ${bmp_srcs}
-# )
-# target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})
-# target_include_directories(MandelbrotCuda PRIVATE bmp/)
+find_package(CUDA REQUIRED)
+cuda_add_executable(MandelbrotCuda
+  MandelbrotGPU/main.cu
+  ${bmp_srcs}
+)
+target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})
+target_include_directories(MandelbrotCuda PRIVATE bmp/)
 ##############################################

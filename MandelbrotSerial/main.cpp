@@ -1,5 +1,4 @@
-#include "../bmp/bmp.h"
-#include "../bmp/bmp.c"
+#include "bmp.h"
 #include "computePixel.h"
 #include "defs.h"
 
