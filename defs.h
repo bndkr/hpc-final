@@ -6,3 +6,14 @@
 
 #define BLACK 50
 #define WHITE 230
+
+#define KERNEL_CONTENT { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } }
+
+#ifdef __CUDACC__
+__device__ char KERNEL[3][3] = KERNEL_CONTENT;
+char HOST_KERNEL[3][3] = KERNEL_CONTENT;
+#else
+char KERNEL[3][3] = KERNEL_CONTENT;
+#endif
+
+#undef KERNEL_CONENT

@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-void convolveImage(unsigned char* pImage, unsigned char* rImage, unsigned char kernel[3][3], size_t my_start_y, size_t my_start_x, size_t my_end_y, size_t my_end_x)
+void convolveImage(unsigned char* pImage, unsigned char* rImage, char kernel[3][3], size_t my_start_y, size_t my_start_x, size_t my_end_y, size_t my_end_x)
 {
     if (my_end_y > HEIGHT)
     {
@@ -82,15 +82,6 @@ int main(int, char**)
 
     printf("Done Calculating Image\n");
 
-    // perform a blur image convolution kernel
-
-    // define a 3x3 kernel
-    // blur kernel
-    unsigned char kernel[3][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
-
-    // sharpen kernel
-    // unsigned char kernel[3][3] = { { 0, 1, 0 }, { 1, -4, 1 }, { 0, 1, 0 } };
-
     // for each pixel
     // std::thread my_thread(convolveImage, pImage, rImage, kernel, 0, 0, 400, 400);
     // std::thread my_thread2(convolveImage, pImage, rImage, kernel, 0, 400, 400, 800);
@@ -106,7 +97,7 @@ int main(int, char**)
     {
         for (size_t j = 0; j < xtiles; j++)
         {
-            threads.push_back(std::thread(convolveImage, pImage, rImage, kernel, i * tileHeight, j * tileWidth, i * tileHeight + tileHeight, j * tileWidth + tileWidth));
+            threads.push_back(std::thread(convolveImage, pImage, rImage, KERNEL, i * tileHeight, j * tileWidth, i * tileHeight + tileHeight, j * tileWidth + tileWidth));
         }
         while (!threads.empty())
         {

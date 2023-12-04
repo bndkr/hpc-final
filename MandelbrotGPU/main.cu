@@ -32,8 +32,6 @@ namespace
 
     __global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageCopy)
     {
-        // edge detection kernel
-        char kernel[3][3] = { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } };
         int i = blockIdx.y * blockDim.y + threadIdx.y;
         int j = blockIdx.x * blockDim.x + threadIdx.x;
         if (i < HEIGHT && j < WIDTH)
@@ -47,9 +45,9 @@ namespace
                 {
                     if (i + k >= 0 && i + k < HEIGHT && j + l >= 0 && j + l < WIDTH)
                     {
-                        sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                        sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                        sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                        sum_r += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                        sum_g += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                        sum_b += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
                     }
                 }
             }
