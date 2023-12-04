@@ -1,7 +1,7 @@
-#include "bmp.h"
+#include "../bmp/bmp.h"
+#include "../bmp/bmp.c"
 
 #include <cstring>
-#include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,43 +12,7 @@
 #define BLACK 50
 #define WHITE 230
 
-namespace
-{
-    double calculatePixel(const double x_0, const double y_0, const unsigned maxIterations)
-    {
-        // cardioid check
-        double p = sqrt((x_0 - 0.25) * (x_0 - 0.25) + y_0 * y_0);
-        if (x_0 <= p - (2 * p * p) + 0.25)
-            return -1;
-
-        // period 2 bulb check
-        if ((x_0 + 1) * (x_0 + 1) + y_0 * y_0 <= 1.0 / 16)
-            return -1;
-
-        double z_x = 0;
-        double z_y = 0;
-
-        double x_2 = 0;
-        double y_2 = 0;
-
-        unsigned int iteration = 0;
-
-        while (x_2 + y_2 < 4 && iteration < maxIterations)
-        {
-            // iterate: z = z^2 + c
-            z_y = 2 * z_x * z_y + y_0;
-            z_x = x_2 - y_2 + x_0;
-            x_2 = z_x * z_x;
-            y_2 = z_y * z_y;
-            iteration++;
-        }
-        if (iteration == maxIterations)
-        {
-            return -1; // inside the mandelbrot set
-        }
-        return iteration;
-    }
-} // namespace
+void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow);
 
 int main(int argc, char** argv)
 {
@@ -75,26 +39,27 @@ int main(int argc, char** argv)
     int end_row = start_row + rows_per_process;
     printf("rank %d: start_row %d, end_row %d\n", rank, start_row, end_row);
     fflush(stdout);
-    for (int i = start_row; i < end_row; i++)
-    {
-        for (int j = 0; j < WIDTH; j++)
-        {
-            int local_i = i - start_row;
-            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), 100);
-            if (iterations == -1)
-            {
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = BLACK; // green
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = BLACK; // blue
-            }
-            else
-            {
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = WHITE; // red
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = WHITE; // green
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = WHITE; // blue
-            }
-        }
-    }
+    // for (int i = start_row; i < end_row; i++)
+    // {
+    //     for (int j = 0; j < WIDTH; j++)
+    //     {
+    //         int local_i = i - start_row;
+    //         double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), 100);
+    //         if (iterations == -1)
+    //         {
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = BLACK; // green
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = BLACK; // blue
+    //         }
+    //         else
+    //         {
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = WHITE; // red
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = WHITE; // green
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = WHITE; // blue
+    //         }
+    //     }
+    // }
+    gpuGenerateMandelBrot(pImageFragment, 1000, start_row, end_row);
     printf("rank %d: done generating mandelbrot pixels.\n", rank);
     fflush(stdout);
     MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);

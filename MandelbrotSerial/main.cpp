@@ -1,4 +1,5 @@
-#include "bmp.h"
+#include "../bmp/bmp.h"
+#include "../bmp/bmp.c"
 
 #include <math.h>
 #include <stdio.h>
