@@ -26,7 +26,6 @@ void convolveImage(unsigned char* pImage, unsigned char* rImage, char kernel[3][
             int sum_r = 0;
             int sum_g = 0;
             int sum_b = 0;
-            int count = 0;
             for (int k = -1; k <= 1; k++)
             {
                 for (int l = -1; l <= 1; l++)
@@ -36,13 +35,12 @@ void convolveImage(unsigned char* pImage, unsigned char* rImage, char kernel[3][
                         sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
                         sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
                         sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
-                        count += kernel[l + 1][k + 1];
                     }
                 }
             }
-            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
-            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
-            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b;
         }
     }
 }
