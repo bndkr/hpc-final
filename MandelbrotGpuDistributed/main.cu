@@ -72,8 +72,6 @@ void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, 
 void gpuConvolveImage(unsigned char* pImage, unsigned char* pImageCopy) {
 }
 
-void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow);
-
 int main(int argc, char** argv)
 {
     MPI_Init(&argc, &argv);
