@@ -1,6 +1,6 @@
 #include <math.h>
 
-__device__ double calculatePixel(const double x_0, const double y_0, const unsigned maxIterations)
+__device__ inline double calculatePixel(const double x_0, const double y_0, const unsigned maxIterations)
 {
     // cardioid check
     double p = sqrt((x_0 - 0.25) * (x_0 - 0.25) + y_0 * y_0);

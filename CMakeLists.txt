@@ -37,7 +37,20 @@ find_package(CUDA REQUIRED)
 cuda_add_executable(MandelbrotCuda
   MandelbrotGPU/main.cu
   ${bmp_srcs}
+  ${compute_cuda_srcs}
 )
 target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})
 target_include_directories(MandelbrotCuda PRIVATE bmp/)
+##############################################
+cuda_add_executable(MandelbrotGPUDistributed
+  MandelbrotGpuDistributed/main.cu
+  ${bmp_srcs}
+  ${compute_cuda_srcs}
+)
+target_link_libraries(MandelbrotGPUDistributed ${CUDA_LIBRARIES} ${MPI_CXX_LIBRARIES})
+target_include_directories(MandelbrotGPUDistributed PRIVATE bmp/)
+##############################################
+add_executable(Validate
+validationFunc.cpp
+)
 ##############################################

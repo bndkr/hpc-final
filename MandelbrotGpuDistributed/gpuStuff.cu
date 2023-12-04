@@ -1,47 +1,7 @@
 #include <math.h>
-#include "../bmp/bmp.h"
-#include <cuda>
-
-#define HEIGHT 1200
-#define WIDTH 1200
-
-#define BLACK 50
-#define WHITE 230
-
-__device__ double calculatePixel(const double x_0, const double y_0, const unsigned maxIterations)
-{
-    // cardioid check
-    double p = sqrt((x_0 - 0.25) * (x_0 - 0.25) + y_0 * y_0);
-    if (x_0 <= p - (2 * p * p) + 0.25)
-        return -1;
-
-    // period 2 bulb check
-    if ((x_0 + 1) * (x_0 + 1) + y_0 * y_0 <= 1.0 / 16)
-        return -1;
-
-    double z_x = 0;
-    double z_y = 0;
-
-    double x_2 = 0;
-    double y_2 = 0;
-
-    unsigned int iteration = 0;
-
-    while (x_2 + y_2 < 4 && iteration < maxIterations)
-    {
-        // iterate: z = z^2 + c
-        z_y = 2 * z_x * z_y + y_0;
-        z_x = x_2 - y_2 + x_0;
-        x_2 = z_x * z_x;
-        y_2 = z_y * z_y;
-        iteration++;
-    }
-    if (iteration == maxIterations)
-    {
-        return -1; // inside the mandelbrot set
-    }
-    return iteration;
-}
+#include "bmp.h"
+#include "computePixel.cuh"
+#include "defs.h"
 
 __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow)
 {
@@ -94,7 +54,7 @@ __global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageC
     }
 }
 
-extern "C" void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow) {
+void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow) {
     int height = endRow - startRow;
     cudaMalloc((void**) &pImage, (height) * WIDTH * BYTES_PER_PIXEL);
 
@@ -104,6 +64,5 @@ extern "C" void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxI
     cudaDeviceSynchronize();
 }
 
-extern "C" void gpuConvolveImage(unsigned char* pImage, unsigned char* pImageCopy) {
-
+void gpuConvolveImage(unsigned char* pImage, unsigned char* pImageCopy) {
 }
