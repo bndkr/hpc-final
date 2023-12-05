@@ -57,9 +57,9 @@ int main(int argc, char** argv)
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     char* imageFileName = "threaded.bmp";
     int numOfThreads = atoi(argv[1]);
-    int tileWidth = ceil(WIDTH / numOfThreads);
+    int tileWidth = WIDTH;
     int tileHeight = ceil(HEIGHT / numOfThreads);
-    int xtiles = ceil(WIDTH / tileWidth);
+    int xtiles = 1;
     int ytiles = ceil(HEIGHT / tileHeight);
     int totalTiles = xtiles * ytiles;
 
@@ -85,8 +85,6 @@ int main(int argc, char** argv)
     }
 
     printf("Done Calculating Image\n");
-
-    // for each pixel
 
     std::vector<std::thread> threads;
     timeval start = startTime();
