@@ -1,6 +1,7 @@
 #include "bmp.h"
 #include "computePixel.h"
 #include "defs.h"
+#include "timer.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -52,7 +53,7 @@ int main(int, char**)
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     char* imageFileName = (char*)"bitmapImage.bmp";
-    float numOfThreads = 5;
+    float numOfThreads = 4;
     int xtiles = (int)ceil((float)WIDTH / numOfThreads);
     int ytiles = (int)ceil((float)HEIGHT / numOfThreads);
     int totalTiles = xtiles * ytiles;
@@ -92,16 +93,9 @@ int main(int, char**)
     // unsigned char kernel[3][3] = { { 0, 1, 0 }, { 1, -4, 1 }, { 0, 1, 0 } };
 
     // for each pixel
-    // std::thread my_thread(convolveImage, pImage, rImage, kernel, 0, 0, 400, 400);
-    // std::thread my_thread2(convolveImage, pImage, rImage, kernel, 0, 400, 400, 800);
-    // std::thread my_thread3(convolveImage, pImage, rImage, kernel, 400, 0, 800, 400);
-    // std::thread my_thread4(convolveImage, pImage, rImage, kernel, 400, 400, 800, 800);
-    // my_thread.join();
-    // my_thread2.join();
-    // my_thread3.join();
-    // my_thread4.join();
 
     std::vector<std::thread> threads;
+    timeval start = startTime();
     for (size_t i = 0; i < ytiles; i++)
     {
         for (size_t j = 0; j < xtiles; j++)
@@ -114,8 +108,9 @@ int main(int, char**)
             threads.pop_back();
         }
     }
+    timeval end = stopTime();
 
     generateBitmapImage(rImage, HEIGHT, WIDTH, imageFileName);
-    printf("Image generated!!");
+    printf("Image generated!! In %f seconds\n", elapsedTime(start,end));
     return 0;
 }

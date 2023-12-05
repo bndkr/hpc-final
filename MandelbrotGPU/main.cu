@@ -1,6 +1,7 @@
 #include "bmp.h"
 #include "computePixel.cuh"
 #include "defs.h"
+#include "timer.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -71,13 +72,15 @@ int main(int, char**)
     dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil(HEIGHT / (float)threadsPerBlock.y));
     generateMandelbrot<<<numBlocks, threadsPerBlock>>>(hImageIn, 1000);
     cudaDeviceSynchronize();
+    timeval start = startTime();
     convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(hImageIn, hImageOut);
     cudaDeviceSynchronize();
 
     unsigned char* pOutputImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     cudaMemcpy(pOutputImage, hImageOut, HEIGHT * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
+    timeval end = stopTime();
     generateBitmapImage(pOutputImage, HEIGHT, WIDTH, "mandelbrot.bmp");
-    printf("Image generated!!");
+    printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
     free(pOutputImage);
     cudaFree(hImageIn);
     cudaFree(hImageOut);

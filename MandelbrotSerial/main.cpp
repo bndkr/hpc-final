@@ -1,6 +1,7 @@
 #include "bmp.h"
 #include "computePixel.h"
 #include "defs.h"
+#include "timer.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -40,6 +41,7 @@ int main(int, char**)
     unsigned char* pImageCopy = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
 
     // for each pixel
+    timeval start = startTime();
     for (i = 0; i < HEIGHT; i++)
     {
         for (j = 0; j < WIDTH; j++)
@@ -68,7 +70,8 @@ int main(int, char**)
 #endif
         }
     }
+    timeval end = stopTime();
     generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "mandelbrot.bmp");
-    printf("Image generated!!");
+    printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
     return 0;
 }

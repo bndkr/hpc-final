@@ -1,18 +1,21 @@
 #include "bmp.h"
 #include "computePixel.h"
 #include "defs.h"
+#include "timer.h"
 
 #include <cstring>
 #include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctime>
 
 int main(int argc, char** argv)
 {
     MPI_Init(&argc, &argv);
 
     int rank, size;
+    timeval start;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -64,6 +67,7 @@ int main(int argc, char** argv)
     // use MPI to send the data to each process
     if (rank == 0)
     {
+        start = startTime();
         // start at one so we get a row of blank pixels for convolution
         for (int i = 1; i < rows_per_process + 2; i++)
         {
@@ -124,9 +128,10 @@ int main(int argc, char** argv)
     MPI_Gather(pConvoFragmentResult, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pFinalImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
+        timeval end = stopTime();
         generateBitmapImage(pMandelbrotImage, HEIGHT, WIDTH, "mandelbrot.bmp");
         generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "convolved.bmp");
-        printf("rank %d: done generating images\n", rank);
+        printf("rank %d: done generating images in %f seconds \n", rank, elapsedTime(start, end));
         fflush(stdout);
         free(pMandelbrotImage);
         free(pFinalImage);
