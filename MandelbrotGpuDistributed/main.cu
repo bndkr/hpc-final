@@ -7,12 +7,15 @@
 #include "bmp.h"
 #include "computePixel.cuh"
 #include "defs.h"
+#include "timer.h"
 
 __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow)
 {
+    printf("here");
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     int j = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < HEIGHT && j < WIDTH && i >= startRow && j <= endRow)
+
+    if (i < HEIGHT && j < WIDTH && i >= startRow && i <= endRow)
     {
         double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
         if (iterations == -1)
@@ -30,34 +33,8 @@ __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIter
     }
 }
 
-__global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageCopy)
-{
-    int i = blockIdx.y * blockDim.y + threadIdx.y;
-    int j = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < HEIGHT && j < WIDTH)
-    {
-        int sum_r = 0;
-        int sum_g = 0;
-        int sum_b = 0;
-        for (int k = -1; k <= 1; k++)
-        {
-            for (int l = -1; l <= 1; l++)
-            {
-                if (i + k >= 0 && i + k < HEIGHT && j + l >= 0 && j + l < WIDTH)
-                {
-                    sum_r += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                    sum_g += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                    sum_b += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
-                }
-            }
-        }
-        pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = (unsigned char) sum_r;
-        pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char) sum_g;
-        pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char) sum_b;
-    }
-}
-
 void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow) {
+
     int height = endRow - startRow;
     cudaMalloc((void**) &pImage, (height) * WIDTH * BYTES_PER_PIXEL);
 
@@ -67,13 +44,56 @@ void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, 
     cudaDeviceSynchronize();
 }
 
-void gpuConvolveImage(unsigned char* pImage, unsigned char* pImageCopy) {
+__global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageCopy, int startRow, int endRow)
+{
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (i < HEIGHT && j < WIDTH && i > startRow && i < endRow)
+    {
+        // printf(" i: %d  ", i);
+        int sum_r = 0;
+        int sum_g = 0;
+        int sum_b = 0;
+        
+        for (int k = -1; k <= 1; k++)
+        {
+            for (int l = -1; l <= 1; l++)
+            {
+                if (i + k >= 0 && i + k < HEIGHT-5 && j + l >= 0 && j + l < WIDTH-5)
+                {
+                    // printf(" %d ", (i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2);
+                    // printf("\nstart: %d end: %d\n", pImage[0], l);
+                    sum_r += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                    printf("here");
+                    sum_g += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                    sum_b += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                }
+            }
+        }
+        pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = (unsigned char)sum_r;
+        pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char)sum_g;
+        pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char)sum_b;
+    }
+}
+
+void gpuConvolveImage(unsigned char* pImage, unsigned char* pImageCopy, int startRow, int endRow) {
+    cudaMalloc((void**)&pImageCopy, (endRow - startRow) * WIDTH * BYTES_PER_PIXEL);
+
+    dim3 threadsPerBlock(32, 32);
+    dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil((endRow - startRow) / (float)threadsPerBlock.y));
+    convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(pImage, pImageCopy, startRow, endRow);
+    cudaDeviceSynchronize();
+
+    unsigned char* pOutputImage = (unsigned char*)malloc((endRow - startRow) * WIDTH * BYTES_PER_PIXEL);
+    cudaMemcpy(pOutputImage, pImageCopy, (endRow - startRow) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
 }
 
 int main(int argc, char** argv)
 {
     MPI_Init(&argc, &argv);
 
+    timeval start;
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -115,7 +135,16 @@ int main(int argc, char** argv)
     //         }
     //     }
     // }
-    gpuGenerateMandelBrot(pImageFragment, 1000, start_row, end_row);
+
+    // gpuGenerateMandelBrot(pImageFragment, 1000, start_row, end_row);
+
+    int height = end_row - start_row;
+    cudaMalloc((void**) &pImageFragment, (height) * WIDTH * BYTES_PER_PIXEL);
+
+    dim3 threadsPerBlock(32, 32);
+    dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil(height / (float)threadsPerBlock.y));
+    generateMandelbrot<<<numBlocks, threadsPerBlock>>>(pImageFragment, 1000, start_row, end_row);
+    cudaDeviceSynchronize();
     printf("rank %d: done generating mandelbrot pixels.\n", rank);
     fflush(stdout);
     MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
@@ -127,6 +156,7 @@ int main(int argc, char** argv)
     // use MPI to send the data to each process
     if (rank == 0)
     {
+        start = startTime();
         // start at one so we get a row of blank pixels for convolution
         for (int i = 1; i < rows_per_process + 2; i++)
         {
@@ -151,33 +181,40 @@ int main(int argc, char** argv)
     }
 
     // iterate over the fragment and apply the kernel
-    for (int i = 0; i < rows_per_process; i++)
-    {
-        for (int j = 0; j < WIDTH; j++)
-        {
-            int sum_r = 0;
-            int sum_g = 0;
-            int sum_b = 0;
-            int count = 0;
-            for (int k = -1; k <= 1; k++)
-            {
-                for (int l = -1; l <= 1; l++)
-                {
-                    int local_i = i + 1; // +1 to offset the top row
-                    if (local_i + k >= 0 && local_i + k < rows_per_process + 2 && j + l >= 0 && j + l < WIDTH)
-                    {
-                        sum_r += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                        sum_g += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                        sum_b += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
-                        count += 1;
-                    }
-                }
-            }
-            pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = (unsigned char)sum_r;
-            pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char)sum_g;
-            pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char)sum_b;
-        }
-    }
+    // for (int i = 0; i < rows_per_process; i++)
+    // {
+    //     for (int j = 0; j < WIDTH; j++)
+    //     {
+    //         int sum_r = 0;
+    //         int sum_g = 0;
+    //         int sum_b = 0;
+    //         int count = 0;
+    //         for (int k = -1; k <= 1; k++)
+    //         {
+    //             for (int l = -1; l <= 1; l++)
+    //             {
+    //                 int local_i = i + 1; // +1 to offset the top row
+    //                 if (local_i + k >= 0 && local_i + k < rows_per_process + 2 && j + l >= 0 && j + l < WIDTH)
+    //                 {
+    //                     sum_r += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+    //                     sum_g += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+    //                     sum_b += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+    //                     count += 1;
+    //                 }
+    //             }
+    //         }
+    //         pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = (unsigned char)sum_r;
+    //         pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char)sum_g;
+    //         pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char)sum_b;
+    //     }
+    // }
+    // gpuConvolveImage(pConvoFragment, pConvoFragmentResult, start_row, end_row);
+    cudaMalloc((void**)&pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL);
+    convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(pConvoFragment, pConvoFragmentResult, start_row, end_row);
+    cudaDeviceSynchronize();
+
+    unsigned char* pOutputImage = (unsigned char*)malloc((end_row - start_row) * WIDTH * BYTES_PER_PIXEL);
+    cudaMemcpy(pOutputImage, pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
     unsigned char* pFinalImage;
     if (rank == 0)
     {
@@ -186,8 +223,9 @@ int main(int argc, char** argv)
     MPI_Gather(pConvoFragmentResult, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pFinalImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
+        timeval end = stopTime();
         generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "gpu-distributed.bmp");
-        printf("rank %d: done generating images\n", rank);
+        printf("rank %d: done generating images in %f seconds\n", rank, elapsedTime(start, end));
         fflush(stdout);
         free(pMandelbrotImage);
         free(pFinalImage);
