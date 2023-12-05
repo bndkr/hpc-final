@@ -45,12 +45,18 @@ void convolveImage(unsigned char* pImage, unsigned char* rImage, char kernel[3][
     }
 }
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
+    if (argc != 2)
+    {
+        printf("Usage: ./MandelbrotThreaded <number of threads>\n");
+        return 1;
+    }
+
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     char* imageFileName = "threaded.bmp";
-    int numOfThreads = 4;
+    int numOfThreads = atoi(argv[1]);
     int tileWidth = ceil(WIDTH / numOfThreads);
     int tileHeight = ceil(HEIGHT / numOfThreads);
     int xtiles = ceil(WIDTH / tileWidth);
