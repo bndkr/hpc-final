@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 
-void convolveImage(unsigned char* pImage, unsigned char* rImage, unsigned char kernel[3][3], size_t my_start_y, size_t my_start_x, size_t my_end_y, size_t my_end_x)
+void convolveImage(unsigned char* pImage, unsigned char* rImage, char kernel[3][3], size_t my_start_y, size_t my_start_x, size_t my_end_y, size_t my_end_x)
 {
     if (my_end_y > HEIGHT)
     {
@@ -27,7 +27,6 @@ void convolveImage(unsigned char* pImage, unsigned char* rImage, unsigned char k
             int sum_r = 0;
             int sum_g = 0;
             int sum_b = 0;
-            int count = 0;
             for (int k = -1; k <= 1; k++)
             {
                 for (int l = -1; l <= 1; l++)
@@ -37,13 +36,12 @@ void convolveImage(unsigned char* pImage, unsigned char* rImage, unsigned char k
                         sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
                         sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
                         sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
-                        count += kernel[l + 1][k + 1];
                     }
                 }
             }
-            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r / count;
-            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g / count;
-            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b / count;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = sum_r;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = sum_g;
+            rImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = sum_b;
         }
     }
 }
@@ -52,7 +50,7 @@ int main(int, char**)
 {
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
-    char* imageFileName = (char*)"bitmapImage.bmp";
+    char* imageFileName = (char*)"threaded.bmp";
     float numOfThreads = 4;
     int xtiles = (int)ceil((float)WIDTH / numOfThreads);
     int ytiles = (int)ceil((float)HEIGHT / numOfThreads);
@@ -83,15 +81,6 @@ int main(int, char**)
 
     printf("Done Calculating Image\n");
 
-    // perform a blur image convolution kernel
-
-    // define a 3x3 kernel
-    // blur kernel
-    unsigned char kernel[3][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
-
-    // sharpen kernel
-    // unsigned char kernel[3][3] = { { 0, 1, 0 }, { 1, -4, 1 }, { 0, 1, 0 } };
-
     // for each pixel
 
     std::vector<std::thread> threads;
@@ -100,7 +89,7 @@ int main(int, char**)
     {
         for (size_t j = 0; j < xtiles; j++)
         {
-            threads.push_back(std::thread(convolveImage, pImage, rImage, kernel, i * tileHeight, j * tileWidth, i * tileHeight + tileHeight, j * tileWidth + tileWidth));
+            threads.push_back(std::thread(convolveImage, pImage, rImage, KERNEL, i * tileHeight, j * tileWidth, i * tileHeight + tileHeight, j * tileWidth + tileWidth));
         }
         while (!threads.empty())
         {

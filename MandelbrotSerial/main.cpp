@@ -31,13 +31,6 @@ int main(int, char**)
         }
     }
 
-    // blur kernel
-    // unsigned char kernel[3][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
-    // sharpen kernel
-    // char kernel[3][3] = { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } };
-    // edge detection kernel
-    char kernel[3][3] = { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } };
-
     unsigned char* pImageCopy = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
 
     // for each pixel
@@ -56,9 +49,9 @@ int main(int, char**)
                 {
                     if (i + k >= 0 && i + k < HEIGHT && j + l >= 0 && j + l < WIDTH)
                     {
-                        sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                        sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                        sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                        sum_r += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                        sum_g += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                        sum_b += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
                         count += 1;
                     }
                 }
@@ -71,7 +64,7 @@ int main(int, char**)
         }
     }
     timeval end = stopTime();
-    generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "mandelbrot.bmp");
+    generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "serial.bmp");
     printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
     return 0;
 }

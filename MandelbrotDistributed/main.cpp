@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     unsigned char* pConvoFragment = (unsigned char*)calloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL, 1);
     unsigned char* pConvoFragmentResult = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
 
-    // use MPI to send the data to each process
+    // send the data to each process
     if (rank == 0)
     {
         start = startTime();
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
         MPI_Recv(pConvoFragment, (rows_per_process + (rank == size - 1 ? 1 : 2)) * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    char kernel[3][3] = { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } };
+    
     // iterate over the fragment and apply the kernel
     for (int i = 0; i < rows_per_process; i++)
     {
@@ -108,9 +108,9 @@ int main(int argc, char** argv)
                     int local_i = i + 1; // +1 to offset the top row
                     if (local_i + k >= 0 && local_i + k < rows_per_process + 2 && j + l >= 0 && j + l < WIDTH)
                     {
-                        sum_r += kernel[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                        sum_g += kernel[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                        sum_b += kernel[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                        sum_r += KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                        sum_g += KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                        sum_b += KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
                         count += 1;
                     }
                 }
@@ -129,8 +129,7 @@ int main(int argc, char** argv)
     if (rank == 0)
     {
         timeval end = stopTime();
-        generateBitmapImage(pMandelbrotImage, HEIGHT, WIDTH, "mandelbrot.bmp");
-        generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "convolved.bmp");
+        generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "distributed.bmp");
         printf("rank %d: done generating images in %f seconds \n", rank, elapsedTime(start, end));
         fflush(stdout);
         free(pMandelbrotImage);
