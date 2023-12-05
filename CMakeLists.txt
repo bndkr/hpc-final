@@ -5,7 +5,6 @@ set(compute_srcs computePixel.h computePixel.c)
 set(compute_cuda_srcs computePixel.cuh)
 set(defs defs.h)
 set(timer_srcs timer.c timer.h)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 ##############################################
 add_executable(MandelbrotSerial

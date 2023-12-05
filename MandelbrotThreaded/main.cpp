@@ -23,7 +23,6 @@ void convolveImage(unsigned char* pImage, unsigned char* rImage, char kernel[3][
     {
         for (auto j = my_start_x; j < my_end_x; j++)
         {
-            // for each pixel, average the 3x3 grid around it
             int sum_r = 0;
             int sum_g = 0;
             int sum_b = 0;
@@ -50,13 +49,13 @@ int main(int, char**)
 {
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
-    char* imageFileName = (char*)"threaded.bmp";
-    float numOfThreads = 4;
-    int xtiles = (int)ceil((float)WIDTH / numOfThreads);
-    int ytiles = (int)ceil((float)HEIGHT / numOfThreads);
+    char* imageFileName = "threaded.bmp";
+    int numOfThreads = 4;
+    int tileWidth = ceil(WIDTH / numOfThreads);
+    int tileHeight = ceil(HEIGHT / numOfThreads);
+    int xtiles = ceil(WIDTH / tileWidth);
+    int ytiles = ceil(HEIGHT / tileHeight);
     int totalTiles = xtiles * ytiles;
-    int tileWidth = (int)(ceil((float)WIDTH / xtiles));
-    int tileHeight = (int)(ceil((float)HEIGHT / ytiles));
 
     int i, j;
     for (i = 0; i < HEIGHT; i++)
@@ -85,21 +84,22 @@ int main(int, char**)
 
     std::vector<std::thread> threads;
     timeval start = startTime();
+    printf("number of tiles: %d\n", totalTiles);
     for (size_t i = 0; i < ytiles; i++)
     {
         for (size_t j = 0; j < xtiles; j++)
         {
             threads.push_back(std::thread(convolveImage, pImage, rImage, KERNEL, i * tileHeight, j * tileWidth, i * tileHeight + tileHeight, j * tileWidth + tileWidth));
         }
-        while (!threads.empty())
-        {
-            threads.back().join();
-            threads.pop_back();
-        }
+    }
+    while (!threads.empty())
+    {
+        threads.back().join();
+        threads.pop_back();
     }
     timeval end = stopTime();
 
     generateBitmapImage(rImage, HEIGHT, WIDTH, imageFileName);
-    printf("Image generated!! In %f seconds\n", elapsedTime(start,end));
+    printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
     return 0;
 }
