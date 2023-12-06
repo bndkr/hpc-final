@@ -9,6 +9,8 @@
 #define BLACK 50
 #define WHITE 230
 
+#define ITERATIONS 1000
+
 // edge detection kernel
 #define KERNEL_CONTENT { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } }
 

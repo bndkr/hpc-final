@@ -1,21 +1,26 @@
-#include "bmp.h"
+#include "../bmp/bmp.h"
 #include "computePixel.h"
 #include "defs.h"
-#include "timer.h"
+#include "../bmp/bmp.c"
 
 #include <cstring>
-#include <math.h>
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctime>
+
+#define HEIGHT 1200
+#define WIDTH 1200
+
+#define BLACK 50
+#define WHITE 230
+
+void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow);
 
 int main(int argc, char** argv)
 {
     MPI_Init(&argc, &argv);
 
     int rank, size;
-    timeval start;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -36,38 +41,38 @@ int main(int argc, char** argv)
     int end_row = start_row + rows_per_process;
     printf("rank %d: start_row %d, end_row %d\n", rank, start_row, end_row);
     fflush(stdout);
-    for (int i = start_row; i < end_row; i++)
-    {
-        for (int j = 0; j < WIDTH; j++)
-        {
-            int local_i = i - start_row;
-            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), ITERATIONS);
-            if (iterations == -1)
-            {
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = BLACK; // green
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = BLACK; // blue
-            }
-            else
-            {
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = WHITE; // red
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = WHITE; // green
-                pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = WHITE; // blue
-            }
-        }
-    }
+    // for (int i = start_row; i < end_row; i++)
+    // {
+    //     for (int j = 0; j < WIDTH; j++)
+    //     {
+    //         int local_i = i - start_row;
+    //         double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), 100);
+    //         if (iterations == -1)
+    //         {
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = BLACK; // green
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = BLACK; // blue
+    //         }
+    //         else
+    //         {
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = WHITE; // red
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = WHITE; // green
+    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = WHITE; // blue
+    //         }
+    //     }
+    // }
+    gpuGenerateMandelBrot(pImageFragment, ITERATIONS, start_row, end_row);
     printf("rank %d: done generating mandelbrot pixels.\n", rank);
     fflush(stdout);
     MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
     // +2 for the extra top and bottom rows needed for convolution
-    unsigned char* pConvoFragment = (unsigned char*)calloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL, 1);
+    unsigned char* pConvoFragment = (unsigned char*)malloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL);
     unsigned char* pConvoFragmentResult = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
 
-    // send the data to each process
+    // use MPI to send the data to each process
     if (rank == 0)
     {
-        start = startTime();
         // start at one so we get a row of blank pixels for convolution
         for (int i = 1; i < rows_per_process + 2; i++)
         {
@@ -91,7 +96,7 @@ int main(int argc, char** argv)
         MPI_Recv(pConvoFragment, (rows_per_process + (rank == size - 1 ? 1 : 2)) * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    
+    char kernel[3][3] = { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } };
     // iterate over the fragment and apply the kernel
     for (int i = 0; i < rows_per_process; i++)
     {
@@ -108,9 +113,9 @@ int main(int argc, char** argv)
                     int local_i = i + 1; // +1 to offset the top row
                     if (local_i + k >= 0 && local_i + k < rows_per_process + 2 && j + l >= 0 && j + l < WIDTH)
                     {
-                        sum_r += KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                        sum_g += KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                        sum_b += KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                        sum_r += kernel[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                        sum_g += kernel[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                        sum_b += kernel[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
                         count += 1;
                     }
                 }
@@ -128,15 +133,16 @@ int main(int argc, char** argv)
     MPI_Gather(pConvoFragmentResult, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pFinalImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
-        timeval end = stopTime();
-        generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "distributed.bmp");
-        printf("rank %d: done generating images in %f seconds \n", rank, elapsedTime(start, end));
+        generateBitmapImage(pMandelbrotImage, HEIGHT, WIDTH, "mandelbrot.bmp");
+        generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "convolved.bmp");
+        printf("rank %d: done generating images\n", rank);
         fflush(stdout);
         free(pMandelbrotImage);
         free(pFinalImage);
     }
     free(pConvoFragment);
     free(pConvoFragmentResult);
+    printf("exiting rank %d\n", rank);
     fflush(stdout);
     MPI_Finalize();
     return 0;
