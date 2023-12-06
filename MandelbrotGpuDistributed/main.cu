@@ -11,13 +11,12 @@
 
 __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow)
 {
-    printf("here");
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     int j = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i < HEIGHT && j < WIDTH && i >= startRow && i <= endRow)
     {
-        double iterations = calculatePixelGPU(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
+        double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
         if (iterations == -1)
         {
             pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
@@ -33,25 +32,14 @@ __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIter
     }
 }
 
-void gpuGenerateMandelBrot(unsigned char* pImage, const unsigned maxIterations, int startRow, int endRow) {
-
-    int height = endRow - startRow;
-    cudaMalloc((void**) &pImage, (height) * WIDTH * BYTES_PER_PIXEL);
-
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil(height / (float)threadsPerBlock.y));
-    generateMandelbrot<<<numBlocks, threadsPerBlock>>>(pImage, 1000, startRow, endRow);
-    cudaDeviceSynchronize();
-}
-
 __global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageCopy, int startRow, int endRow)
-{
+{   
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     int j = blockIdx.x * blockDim.x + threadIdx.x;
     
+
     if (i < HEIGHT && j < WIDTH && i > startRow && i < endRow)
     {
-        // printf(" i: %d  ", i);
         int sum_r = 0;
         int sum_g = 0;
         int sum_b = 0;
@@ -62,10 +50,7 @@ __global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageC
             {
                 if (i + k >= 0 && i + k < HEIGHT-5 && j + l >= 0 && j + l < WIDTH-5)
                 {
-                    // printf(" %d ", (i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2);
-                    // printf("\nstart: %d end: %d\n", pImage[0], l);
                     sum_r += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                    printf("here");
                     sum_g += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
                     sum_b += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
                 }
@@ -75,18 +60,6 @@ __global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageC
         pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char)sum_g;
         pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char)sum_b;
     }
-}
-
-void gpuConvolveImage(unsigned char* pImage, unsigned char* pImageCopy, int startRow, int endRow) {
-    cudaMalloc((void**)&pImageCopy, (endRow - startRow) * WIDTH * BYTES_PER_PIXEL);
-
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil((endRow - startRow) / (float)threadsPerBlock.y));
-    convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(pImage, pImageCopy, startRow, endRow);
-    cudaDeviceSynchronize();
-
-    unsigned char* pOutputImage = (unsigned char*)malloc((endRow - startRow) * WIDTH * BYTES_PER_PIXEL);
-    cudaMemcpy(pOutputImage, pImageCopy, (endRow - startRow) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
 }
 
 int main(int argc, char** argv)
@@ -102,6 +75,7 @@ int main(int argc, char** argv)
     unsigned char* pMandelbrotImage;
     if (rank == 0)
     {
+        
         pMandelbrotImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
         if (!pMandelbrotImage)
         {
@@ -110,44 +84,32 @@ int main(int argc, char** argv)
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
-    unsigned char* pImageFragment = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
     int start_row = rank * rows_per_process;
     int end_row = start_row + rows_per_process;
     printf("rank %d: start_row %d, end_row %d\n", rank, start_row, end_row);
     fflush(stdout);
-    // for (int i = start_row; i < end_row; i++)
-    // {
-    //     for (int j = 0; j < WIDTH; j++)
-    //     {
-    //         int local_i = i - start_row;
-    //         double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), 100);
-    //         if (iterations == -1)
-    //         {
-    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
-    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = BLACK; // green
-    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = BLACK; // blue
-    //         }
-    //         else
-    //         {
-    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = WHITE; // red
-    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = WHITE; // green
-    //             pImageFragment[local_i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = WHITE; // blue
-    //         }
-    //     }
-    // }
 
-    // gpuGenerateMandelBrot(pImageFragment, 1000, start_row, end_row);
+    // Allocate host memory
+    unsigned char* pImageFragment = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
 
-    int height = end_row - start_row;
-    cudaMalloc((void**) &pImageFragment, (height) * WIDTH * BYTES_PER_PIXEL);
+    // Allocate device memory
+    unsigned char* d_pImageFragment;
+    cudaMalloc((void**) &d_pImageFragment, (rows_per_process) * WIDTH * BYTES_PER_PIXEL);
 
     dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil(height / (float)threadsPerBlock.y));
-    generateMandelbrot<<<numBlocks, threadsPerBlock>>>(pImageFragment, 1000, start_row, end_row);
+    dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil(rows_per_process / (float)threadsPerBlock.y));
+    // Generate Mandelbrot set
+    generateMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pImageFragment, 1000, start_row, end_row);
     cudaDeviceSynchronize();
+
+    // Copy data back to host
+    cudaMemcpy(pImageFragment, d_pImageFragment, (rows_per_process) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
+
+    // Gather data
+    MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     printf("rank %d: done generating mandelbrot pixels.\n", rank);
     fflush(stdout);
-    MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+    cudaDeviceSynchronize();
 
     // +2 for the extra top and bottom rows needed for convolution
     unsigned char* pConvoFragment = (unsigned char*)malloc((rows_per_process + 2) * WIDTH * BYTES_PER_PIXEL);
@@ -156,6 +118,7 @@ int main(int argc, char** argv)
     // use MPI to send the data to each process
     if (rank == 0)
     {
+
         start = startTime();
         // start at one so we get a row of blank pixels for convolution
         for (int i = 1; i < rows_per_process + 2; i++)
@@ -180,49 +143,33 @@ int main(int argc, char** argv)
         MPI_Recv(pConvoFragment, (rows_per_process + (rank == size - 1 ? 1 : 2)) * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    // iterate over the fragment and apply the kernel
-    // for (int i = 0; i < rows_per_process; i++)
-    // {
-    //     for (int j = 0; j < WIDTH; j++)
-    //     {
-    //         int sum_r = 0;
-    //         int sum_g = 0;
-    //         int sum_b = 0;
-    //         int count = 0;
-    //         for (int k = -1; k <= 1; k++)
-    //         {
-    //             for (int l = -1; l <= 1; l++)
-    //             {
-    //                 int local_i = i + 1; // +1 to offset the top row
-    //                 if (local_i + k >= 0 && local_i + k < rows_per_process + 2 && j + l >= 0 && j + l < WIDTH)
-    //                 {
-    //                     sum_r += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-    //                     sum_g += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-    //                     sum_b += HOST_KERNEL[l + 1][k + 1] * pConvoFragment[(local_i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
-    //                     count += 1;
-    //                 }
-    //             }
-    //         }
-    //         pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = (unsigned char)sum_r;
-    //         pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 1] = (unsigned char)sum_g;
-    //         pConvoFragmentResult[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char)sum_b;
-    //     }
-    // }
-    // gpuConvolveImage(pConvoFragment, pConvoFragmentResult, start_row, end_row);
-    cudaMalloc((void**)&pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL);
-    convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(pConvoFragment, pConvoFragmentResult, start_row, end_row);
+    // Allocate device memory for convolution results
+    unsigned char* d_pConvoFragmentResult;
+    cudaMalloc((void**)&d_pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL);
+
+    unsigned char* d_pConvoFragment;
+    cudaMalloc((void**)&d_pConvoFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL);
+    cudaMemcpy(d_pConvoFragment, pConvoFragment, (rows_per_process) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
 
-    unsigned char* pOutputImage = (unsigned char*)malloc((end_row - start_row) * WIDTH * BYTES_PER_PIXEL);
-    cudaMemcpy(pOutputImage, pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
+
+    // Perform convolution
+    convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pConvoFragment, d_pConvoFragmentResult, start_row, end_row);
+    cudaDeviceSynchronize();
+
+    // Copy convolution results back to host
+    cudaMemcpy(pConvoFragmentResult, d_pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
     unsigned char* pFinalImage;
     if (rank == 0)
     {
         pFinalImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     }
+    // Gather convolution results
     MPI_Gather(pConvoFragmentResult, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pFinalImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
     if (rank == 0)
     {
+        // printf("\n %d \n", pConvoFragmentResult[5]);
         timeval end = stopTime();
         generateBitmapImage(pFinalImage, HEIGHT, WIDTH, "gpu-distributed.bmp");
         printf("rank %d: done generating images in %f seconds\n", rank, elapsedTime(start, end));
@@ -237,3 +184,44 @@ int main(int argc, char** argv)
     MPI_Finalize();
     return 0;
 }
+
+// // ...
+
+// // Allocate host memory
+// unsigned char* pImageFragment = (unsigned char*)malloc(rows_per_process * WIDTH * BYTES_PER_PIXEL);
+
+// // Allocate device memory
+// unsigned char* d_pImageFragment;
+// cudaMalloc((void**) &d_pImageFragment, (height) * WIDTH * BYTES_PER_PIXEL);
+
+// // ...
+
+// // Generate Mandelbrot set
+// generateMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pImageFragment, 1000, start_row, end_row);
+// cudaDeviceSynchronize();
+
+// // Copy data back to host
+// cudaMemcpy(pImageFragment, d_pImageFragment, (height) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
+
+// // Gather data
+// MPI_Gather(pImageFragment, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pMandelbrotImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+
+// // ...
+
+// // Allocate device memory for convolution results
+// unsigned char* d_pConvoFragmentResult;
+// cudaMalloc((void**)&d_pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL);
+
+// // Perform convolution
+// convolveMandelbrot<<<numBlocks, threadsPerBlock>>>(pConvoFragment, d_pConvoFragmentResult, start_row, end_row);
+// cudaDeviceSynchronize();
+
+// // Copy convolution results back to host
+// cudaMemcpy(pConvoFragmentResult, d_pConvoFragmentResult, (end_row - start_row) * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
+
+// // ...
+
+// // Gather convolution results
+// MPI_Gather(pConvoFragmentResult, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, rank == 0 ? pFinalImage : nullptr, rows_per_process * WIDTH * BYTES_PER_PIXEL, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+
+// // ...
