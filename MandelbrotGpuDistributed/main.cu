@@ -16,7 +16,7 @@ __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIter
 
     if (i < HEIGHT && j < WIDTH && i >= startRow && i <= endRow)
     {
-        double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
+        double iterations = calculatePixelGPU(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
         if (iterations == -1)
         {
             pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     dim3 threadsPerBlock(32, 32);
     dim3 numBlocks(ceil(WIDTH / (float)threadsPerBlock.x), ceil(rows_per_process / (float)threadsPerBlock.y));
     // Generate Mandelbrot set
-    generateMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pImageFragment, 1000, start_row, end_row);
+    generateMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pImageFragment, ITERATIONS, start_row, end_row);
     cudaDeviceSynchronize();
 
     // Copy data back to host
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
 // // ...
 
 // // Generate Mandelbrot set
-// generateMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pImageFragment, 1000, start_row, end_row);
+// generateMandelbrot<<<numBlocks, threadsPerBlock>>>(d_pImageFragment, ITERATIONS, start_row, end_row);
 // cudaDeviceSynchronize();
 
 // // Copy data back to host
