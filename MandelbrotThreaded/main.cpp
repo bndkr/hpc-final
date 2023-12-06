@@ -2,6 +2,7 @@
 #include "computePixel.h"
 #include "defs.h"
 #include "timer.h"
+#include "validate.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -105,5 +106,7 @@ int main(int argc, char** argv)
 
     generateBitmapImage(rImage, HEIGHT, WIDTH, imageFileName);
     printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
+
+    validate(rImage);
     return 0;
 }

@@ -42,6 +42,7 @@ cuda_add_executable(MandelbrotCuda
   MandelbrotGPU/main.cu
   ${bmp_srcs}
   ${compute_cuda_srcs}
+  ${compute_srcs}
   ${timer_srcs}
 )
 target_link_libraries(MandelbrotCuda ${CUDA_LIBRARIES})

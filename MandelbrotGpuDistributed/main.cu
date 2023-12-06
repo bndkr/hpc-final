@@ -17,7 +17,7 @@ __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIter
 
     if (i < HEIGHT && j < WIDTH && i >= startRow && i <= endRow)
     {
-        double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
+        double iterations = calculatePixelGPU(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
         if (iterations == -1)
         {
             pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red

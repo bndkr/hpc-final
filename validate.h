@@ -1,13 +1,17 @@
-#include "bmp.h"
-#include "computePixel.h"
-#include "defs.h"
-#include "timer.h"
+#ifndef VALIDATE_H
+#define VALIDATE_H
 
-#include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include "computePixel.h"
 
-int main(int, char**)
+#include "defs.h"
+
+#define BYTES_PER_PIXEL 3
+
+char kernel[3][3] = { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } };
+
+void validate(const unsigned char* candidate)
 {
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     int i, j;
@@ -34,7 +38,6 @@ int main(int, char**)
     unsigned char* pImageCopy = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
 
     // for each pixel
-    timeval start = startTime();
     for (i = 0; i < HEIGHT; i++)
     {
         for (j = 0; j < WIDTH; j++)
@@ -48,9 +51,9 @@ int main(int, char**)
                 {
                     if (i + k >= 0 && i + k < HEIGHT && j + l >= 0 && j + l < WIDTH)
                     {
-                        sum_r += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
-                        sum_g += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
-                        sum_b += KERNEL[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
+                        sum_r += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 2];
+                        sum_g += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL + 1];
+                        sum_b += kernel[l + 1][k + 1] * pImage[(i + k) * WIDTH * BYTES_PER_PIXEL + (j + l) * BYTES_PER_PIXEL];
                     }
                 }
             }
@@ -59,8 +62,17 @@ int main(int, char**)
             pImageCopy[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 0] = (unsigned char)sum_b;
         }
     }
-    timeval end = stopTime();
-    generateBitmapImage(pImageCopy, HEIGHT, WIDTH, "serial.bmp");
-    printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
-    return 0;
+
+    int count = 0;
+    // do a byte-by-byte comparison of this and the candidate
+    for (i = 0; i < HEIGHT * WIDTH * BYTES_PER_PIXEL; i++)
+    {
+        if (pImageCopy[i] != candidate[i])
+        {  
+            count++;
+        }
+    }
+    printf("Number of pixels that are different: %d\n", count / BYTES_PER_PIXEL);
 }
+
+#endif

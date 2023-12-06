@@ -1,3 +1,5 @@
+#ifndef DEFS_H
+#define DEFS_H
 
 // fun fact - 2520 is the smallest number divisible by all numbers 1-10
 //            also it's the number with the most factors under 3000
@@ -18,3 +20,5 @@ char KERNEL[3][3] = KERNEL_CONTENT;
 #endif
 
 #undef KERNEL_CONENT
+
+#endif

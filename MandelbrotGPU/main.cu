@@ -2,6 +2,7 @@
 #include "computePixel.cuh"
 #include "defs.h"
 #include "timer.h"
+#include "validate.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -17,7 +18,7 @@ namespace
         int j = blockIdx.x * blockDim.x + threadIdx.x;
         if (i < HEIGHT && j < WIDTH)
         {
-            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
+            double iterations = calculatePixelGPU(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), maxIterations);
             if (iterations == -1)
             {
                 pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red
@@ -95,7 +96,8 @@ int main(int, char**)
     cudaMemcpy(pOutputImage, hImageOut, HEIGHT * WIDTH * BYTES_PER_PIXEL, cudaMemcpyDeviceToHost);
     timeval end = stopTime();
     generateBitmapImage(pOutputImage, HEIGHT, WIDTH, "gpu.bmp");
-    printf("%d,%f\n", BLOCK_SIZE, elapsedTime(start, end));
+    printf("Image generated!! In %f seconds\n", elapsedTime(start, end));
+    validate(pOutputImage);
     free(pOutputImage);
     cudaFree(hImageIn);
     cudaFree(hImageOut);
