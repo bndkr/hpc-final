@@ -56,7 +56,7 @@ int main(int argc, char** argv)
 
     unsigned char* pImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
     unsigned char* rImage = (unsigned char*)malloc(HEIGHT * WIDTH * BYTES_PER_PIXEL);
-    char* imageFileName = "threaded.bmp";
+    const char* imageFileName = "threaded.bmp";
     int numOfThreads = atoi(argv[1]);
     int tileWidth = WIDTH;
     int tileHeight = ceil(HEIGHT / numOfThreads);
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
     {
         for (j = 0; j < WIDTH; j++)
         {
-            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), 100);
+            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), ITERATIONS);
             if (iterations == -1)
             {
                 pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red

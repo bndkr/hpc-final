@@ -19,7 +19,7 @@ void validate(const unsigned char* candidate)
     {
         for (j = 0; j < WIDTH; j++)
         {
-            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), 100);
+            double iterations = calculatePixel(-2.0 + (j * 4.0 / WIDTH), (2.0 - (i * 4.0 / HEIGHT)), ITERATIONS);
             if (iterations == -1)
             {
                 pImage[i * WIDTH * BYTES_PER_PIXEL + j * BYTES_PER_PIXEL + 2] = BLACK; // red

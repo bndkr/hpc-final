@@ -31,7 +31,6 @@ __global__ void generateMandelbrot(unsigned char* pImage, const unsigned maxIter
         }
     }
 }
-
 __global__ void convolveMandelbrot(unsigned char* pImage, unsigned char* pImageCopy, int startRow, int endRow)
 {   
     int i = blockIdx.y * blockDim.y + threadIdx.y;
